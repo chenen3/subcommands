@@ -1,67 +1,43 @@
 # subcommands #
 
-[![GoDoc](https://godoc.org/github.com/google/subcommands?status.svg)](https://godoc.org/github.com/google/subcommands)  
+[![GoDoc](https://godoc.org/github.com/chenen3/subcommands?status.svg)](https://godoc.org/github.com/chenen3/subcommands)  
 Subcommands is a Go package that implements a simple way for a single command to
 have many subcommands, each of which takes arguments and so forth.
 
-This is not an official Google product.
-
 ## Usage ##
 
-Set up a 'print' subcommand:
+Set up a 'foo' subcommand:
 
 ```go
-import (
-  "context"
-  "flag"
-  "fmt"
-  "os"
-  "strings"
+import "flag"
 
-  "github.com/google/subcommands"
-)
-
-type printCmd struct {
-  capitalize bool
+type fooCmd struct {
+  bar bool
+  cat bool
 }
 
-func (*printCmd) Name() string     { return "print" }
-func (*printCmd) Synopsis() string { return "Print args to stdout." }
-func (*printCmd) Usage() string {
-  return `print [-capitalize] <some text>:
-  Print args to stdout.
-`
+func (f *fooCmd) Name() string  { return "foo" }
+func (f *fooCmd) Intro() string { return "i am the subcommand foo" }
+
+func (f *fooCmd) SetFlags(flags *flag.FlagSet) {
+  flags.BoolVar(&f.bar, "bar", false, "")
 }
 
-func (p *printCmd) SetFlags(f *flag.FlagSet) {
-  f.BoolVar(&p.capitalize, "capitalize", false, "capitalize output")
-}
-
-func (p *printCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-  for _, arg := range f.Args() {
-    if p.capitalize {
-      arg = strings.ToUpper(arg)
-    }
-    fmt.Printf("%s ", arg)
-  }
-  fmt.Println()
-  return subcommands.ExitSuccess
+func (f *fooCmd) Execute() error {
+  f.cat = true
+  return nil
 }
 ```
 
-Register using the default Commander, also use some built in subcommands,
-finally run Execute using ExitStatus as the exit code:
+Register the subcommands and execute:
 
 ```go
 func main() {
-  subcommands.Register(subcommands.HelpCommand(), "")
-  subcommands.Register(subcommands.FlagsCommand(), "")
-  subcommands.Register(subcommands.CommandsCommand(), "")
-  subcommands.Register(&printCmd{}, "")
-
-  flag.Parse()
-  ctx := context.Background()
-  os.Exit(int(subcommands.Execute(ctx)))
+	subcommands.Register(new(fooCmd))
+	err := subcommands.Execute()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
 ```
-
