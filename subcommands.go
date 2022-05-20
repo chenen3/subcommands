@@ -44,43 +44,51 @@ type commands struct {
 }
 
 func (c *commands) Execute() error {
-	// TODO: help
-	// help:=c.topFlags.BoolVar("help", false, "print help message")
-	err := c.topFlags.Parse(os.Args[1:])
-	if err != nil {
-		return err
+	c.topFlags.Usage = c.printUsage
+	// topFlags exit on parsing error
+	c.topFlags.Parse(os.Args[1:])
+	subCmdName := c.topFlags.Arg(0)
+	if subCmdName == "" {
+		c.topFlags.Usage()
+		return nil
 	}
 
-	subCmdName := c.topFlags.Arg(0)
+	var help bool
+	if subCmdName == "help" {
+		help = true
+		// help next subcommand
+		subCmdName = c.topFlags.Arg(1)
+		if subCmdName == "" {
+			c.topFlags.Usage()
+			return nil
+		}
+	}
+
 	for _, cmd := range c.cmds {
 		if cmd.Name() != subCmdName {
 			continue
 		}
-		flags := flag.NewFlagSet(subCmdName, flag.ContinueOnError)
-		help := flags.Bool("help", false, "print the help message")
+		flags := flag.NewFlagSet(subCmdName, flag.ExitOnError)
 		cmd.SetFlags(flags)
-		if err := flags.Parse(c.topFlags.Args()[1:]); err != nil {
-			return err
-		}
-		if *help {
-			fmt.Fprintf(flags.Output(), "%s\n\n", cmd.Intro())
-			flags.PrintDefaults()
+		if help {
+			flags.Usage()
 			return nil
 		}
+		flags.Parse(c.topFlags.Args()[1:])
 		return cmd.Execute()
 	}
 
-	c.printUsage()
+	// unknown command
+	s := fmt.Sprintf("unknown command: %s\n\n", subCmdName)
+	s += fmt.Sprintf("See '%s help' for more information on the commands\n", os.Args[0])
+	fmt.Fprint(c.topFlags.Output(), s)
 	return nil
 }
 
 func (c *commands) printUsage() {
-	s := "Usage:\n"
-	if c.topFlags.NFlag() > 0 {
-		s += fmt.Sprintf("  %s [flags]\n", os.Args[0])
-	}
+	s := fmt.Sprintf("Usage of %s:\n", os.Args[0])
 	if c.cmds != nil {
-		s += fmt.Sprintf("  %s [command]\n", os.Args[0])
+		s += fmt.Sprintf("  %s <command>\n", os.Args[0])
 		s += "\n"
 		s += "Commands:\n"
 		for _, cmd := range c.cmds {
@@ -89,15 +97,15 @@ func (c *commands) printUsage() {
 			s += fmt.Sprintf("  %s    \t%s\n", cmd.Name(), cmd.Intro())
 		}
 	}
+	s += "\n"
+	s += fmt.Sprintf("For more information on available commands and options see '%s help <command>'\n", os.Args[0])
 	fmt.Fprint(c.topFlags.Output(), s)
-
-	if c.topFlags.NFlag() > 0 {
-		s += fmt.Sprintf("  %s [flags]\n", os.Args[0])
-		c.topFlags.PrintDefaults()
-	}
 }
 
-var root = commands{topFlags: flag.NewFlagSet(os.Args[0], flag.ContinueOnError)}
+var root = commands{
+	topFlags: flag.CommandLine,
+	cmds:     []Commander{new(helpCmd)},
+}
 
 func Register(c Commander) {
 	root.cmds = append(root.cmds, c)
@@ -106,3 +114,10 @@ func Register(c Commander) {
 func Execute() error {
 	return root.Execute()
 }
+
+type helpCmd struct{}
+
+func (h *helpCmd) Name() string           { return "help" }
+func (h *helpCmd) Intro() string          { return "print the help message" }
+func (h *helpCmd) SetFlags(*flag.FlagSet) {}
+func (h *helpCmd) Execute() error         { return nil }

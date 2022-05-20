@@ -9,31 +9,36 @@ have many subcommands, each of which takes arguments and so forth.
 Set up a 'foo' subcommand:
 
 ```go
-import "flag"
+import (
+	"flag"
+	"fmt"
+	"os"
 
-type fooCmd struct {
-  bar bool
-  cat bool
+	"github.com/chenen3/subcommands"
+)
+
+type printCmd struct {
+	b bool
 }
 
-func (f *fooCmd) Name() string  { return "foo" }
-func (f *fooCmd) Intro() string { return "i am the subcommand foo" }
-
-func (f *fooCmd) SetFlags(flags *flag.FlagSet) {
-  flags.BoolVar(&f.bar, "bar", false, "")
+func (f *printCmd) Name() string  { return "print" }
+func (f *printCmd) Intro() string { return "Print args to stdout" }
+func (f *printCmd) SetFlags(flags *flag.FlagSet) {
+	flags.BoolVar(&f.b, "b", false, "bool output")
 }
 
-func (f *fooCmd) Execute() error {
-  f.cat = true
-  return nil
+func (f *printCmd) Execute() error {
+	fmt.Println("print", f.b)
+	return nil
 }
+
 ```
 
 Register the subcommands and execute:
 
 ```go
 func main() {
-	subcommands.Register(new(fooCmd))
+	subcommands.Register(new(printCmd))
 	err := subcommands.Execute()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
