@@ -6,7 +6,7 @@ have many subcommands, each of which takes arguments and so forth.
 
 ## Usage ##
 
-Set up a 'foo' subcommand:
+Set up a 'print' subcommand:
 
 ```go
 import (
