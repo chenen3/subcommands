@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Commander interface {
@@ -79,32 +80,30 @@ func (c *commands) Execute() error {
 	}
 
 	// unknown command
-	s := fmt.Sprintf("unknown command: %s\n\n", subCmdName)
-	s += fmt.Sprintf("See '%s help' for more information on the commands\n", os.Args[0])
+	s := fmt.Sprintf("%s %s: unknown command\n", os.Args[0], subCmdName)
+	s += fmt.Sprintf("Run '%s help' for usage.\n", os.Args[0])
 	fmt.Fprint(c.topFlags.Output(), s)
 	return nil
 }
 
 func (c *commands) printUsage() {
-	s := fmt.Sprintf("Usage of %s:\n", os.Args[0])
+	var b strings.Builder
+	b.WriteString("Usage:\n")
 	if c.cmds != nil {
-		s += fmt.Sprintf("  %s <command>\n", os.Args[0])
-		s += "\n"
-		s += "Commands:\n"
+		fmt.Fprintf(&b, "\t%s <command> [arguments]\n\n", os.Args[0])
+		b.WriteString("The commands are:\n")
 		for _, cmd := range c.cmds {
 			// Four spaces before the tab triggers good alignment
 			// for both 4- and 8-space tab stops.
-			s += fmt.Sprintf("  %s    \t%s\n", cmd.Name(), cmd.Intro())
+			fmt.Fprintf(&b, "\t%s    \t%s\n", cmd.Name(), cmd.Intro())
 		}
 	}
-	s += "\n"
-	s += fmt.Sprintf("For more information on available commands and options see '%s help <command>'\n", os.Args[0])
-	fmt.Fprint(c.topFlags.Output(), s)
+	fmt.Fprintf(&b, "\nUse \"%s help <command>\" for more information about a command.\n", os.Args[0])
+	fmt.Fprint(c.topFlags.Output(), b.String())
 }
 
 var root = commands{
 	topFlags: flag.CommandLine,
-	cmds:     []Commander{new(helpCmd)},
 }
 
 func Register(c Commander) {
@@ -114,10 +113,3 @@ func Register(c Commander) {
 func Execute() error {
 	return root.Execute()
 }
-
-type helpCmd struct{}
-
-func (h *helpCmd) Name() string           { return "help" }
-func (h *helpCmd) Intro() string          { return "print the help message" }
-func (h *helpCmd) SetFlags(*flag.FlagSet) {}
-func (h *helpCmd) Execute() error         { return nil }

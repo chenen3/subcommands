@@ -12,14 +12,14 @@ type printCmd struct {
 	b bool
 }
 
-func (f *printCmd) Name() string  { return "print" }
-func (f *printCmd) Intro() string { return "Print args to stdout" }
-func (f *printCmd) SetFlags(flags *flag.FlagSet) {
-	flags.BoolVar(&f.b, "b", false, "bool output")
+func (p *printCmd) Name() string  { return "print" }
+func (p *printCmd) Intro() string { return "print args to stdout" }
+func (p *printCmd) SetFlags(flags *flag.FlagSet) {
+	flags.BoolVar(&p.b, "b", false, "bool output")
 }
 
-func (f *printCmd) Execute() error {
-	fmt.Println("print", f.b)
+func (p *printCmd) Execute() error {
+	fmt.Println("print", p.b)
 	return nil
 }
 
