@@ -7,19 +7,19 @@ import (
 )
 
 type fooCmd struct {
-	bar bool
-	cat bool
+	setFlag  bool
+	executed bool
 }
 
 func (f *fooCmd) Name() string  { return "foo" }
 func (f *fooCmd) Intro() string { return "i am the subcommand foo" }
 
 func (f *fooCmd) SetFlags(flags *flag.FlagSet) {
-	flags.BoolVar(&f.bar, "bar", false, "")
+	flags.BoolVar(&f.setFlag, "bar", false, "")
 }
 
 func (f *fooCmd) Execute() error {
-	f.cat = true
+	f.executed = true
 	return nil
 }
 
@@ -31,10 +31,10 @@ func TestSubCmd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !fc.bar {
-		t.Fatalf("want bar: %v, got %v", true, fc.bar)
+	if !fc.setFlag {
+		t.Fatal("flag not setted")
 	}
-	if !fc.cat {
-		t.Fatalf("want cat: %v, got %v", true, fc.cat)
+	if !fc.executed {
+		t.Fatal("not executed")
 	}
 }
